@@ -467,7 +467,7 @@ pub struct Whvp {
     _proc_features: WHV_PROCESSOR_FEATURES,
 
     /// Supported xsave features
-    xsave_features: WHV_PROCESSOR_XSAVE_FEATURES,
+    xsave_features: Option<WHV_PROCESSOR_XSAVE_FEATURES>,
 }
 
 impl Whvp {
@@ -638,66 +638,73 @@ impl Whvp {
         }
 
         // Get xsave features
-        let mut xsave_features: WHV_PROCESSOR_XSAVE_FEATURES =
-            unsafe { std::mem::zeroed() };
+        let mut xsave_features: Option<WHV_PROCESSOR_XSAVE_FEATURES> = unsafe { Some(std::mem::zeroed()) };
         let mut bread = 0u32;
         let res = unsafe { WHvGetCapability(
             WHV_CAPABILITY_CODE_WHvCapabilityCodeProcessorXsaveFeatures,
-            &mut xsave_features as *mut WHV_PROCESSOR_XSAVE_FEATURES as *mut c_void,
-            std::mem::size_of_val(&xsave_features) as u32,
+            &mut xsave_features.unwrap() as *mut WHV_PROCESSOR_XSAVE_FEATURES as *mut c_void,
+            std::mem::size_of_val(&xsave_features.unwrap()) as u32,
             &mut bread) };
-        assert!(res == 0, "WHvGetCapability() error: {:#x}", res);
-        assert!(bread == std::mem::size_of_val(&xsave_features) as u32,
-            "Failed to get WHvCapabilityCodeProcessorXsaveFeatures");
 
-        unsafe {
-            print!("Processor detected with features:\n\
-                    \tXsaveSupport              {}\n\
-                    \tXsaveoptSupport           {}\n\
-                    \tAvxSupport                {}\n\
-                    \tAvx2Support               {}\n\
-                    \tFmaSupport                {}\n\
-                    \tMpxSupport                {}\n\
-                    \tAvx512Support             {}\n\
-                    \tAvx512DQSupport           {}\n\
-                    \tAvx512CDSupport           {}\n\
-                    \tAvx512BWSupport           {}\n\
-                    \tAvx512VLSupport           {}\n\
-                    \tXsaveCompSupport          {}\n\
-                    \tXsaveSupervisorSupport    {}\n\
-                    \tXcr1Support               {}\n\
-                    \tAvx512BitalgSupport       {}\n\
-                    \tAvx512IfmaSupport         {}\n\
-                    \tAvx512VBmiSupport         {}\n\
-                    \tAvx512VBmi2Support        {}\n\
-                    \tAvx512VnniSupport         {}\n\
-                    \tGfniSupport               {}\n\
-                    \tVaesSupport               {}\n\
-                    \tAvx512VPopcntdqSupport    {}\n\
-                    \tVpclmulqdqSupport         {}\n",
-                    xsave_features.__bindgen_anon_1.XsaveSupport() != 0,
-                    xsave_features.__bindgen_anon_1.XsaveoptSupport() != 0,
-                    xsave_features.__bindgen_anon_1.AvxSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx2Support() != 0,
-                    xsave_features.__bindgen_anon_1.FmaSupport() != 0,
-                    xsave_features.__bindgen_anon_1.MpxSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512Support() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512DQSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512CDSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512BWSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512VLSupport() != 0,
-                    xsave_features.__bindgen_anon_1.XsaveCompSupport() != 0,
-                    xsave_features.__bindgen_anon_1.XsaveSupervisorSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Xcr1Support() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512BitalgSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512IfmaSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512VBmiSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512VBmi2Support() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512VnniSupport() != 0,
-                    xsave_features.__bindgen_anon_1.GfniSupport() != 0,
-                    xsave_features.__bindgen_anon_1.VaesSupport() != 0,
-                    xsave_features.__bindgen_anon_1.Avx512VPopcntdqSupport() != 0,
-                    xsave_features.__bindgen_anon_1.VpclmulqdqSupport() != 0);
+        if res != 0 {
+            xsave_features = None;
+            print!("Xsave feautures NOT supported!\n");
+        } else {
+            // assert!(res == 0, "WHvGetCapability() error: {:#x}", res);
+            assert!(bread == std::mem::size_of_val(&xsave_features) as u32,
+                "Failed to get WHvCapabilityCodeProcessorXsaveFeatures");
+        }
+
+        if xsave_features.is_some() {
+            unsafe {
+                print!("Processor detected with features:\n\
+                        \tXsaveSupport              {}\n\
+                        \tXsaveoptSupport           {}\n\
+                        \tAvxSupport                {}\n\
+                        \tAvx2Support               {}\n\
+                        \tFmaSupport                {}\n\
+                        \tMpxSupport                {}\n\
+                        \tAvx512Support             {}\n\
+                        \tAvx512DQSupport           {}\n\
+                        \tAvx512CDSupport           {}\n\
+                        \tAvx512BWSupport           {}\n\
+                        \tAvx512VLSupport           {}\n\
+                        \tXsaveCompSupport          {}\n\
+                        \tXsaveSupervisorSupport    {}\n\
+                        \tXcr1Support               {}\n\
+                        \tAvx512BitalgSupport       {}\n\
+                        \tAvx512IfmaSupport         {}\n\
+                        \tAvx512VBmiSupport         {}\n\
+                        \tAvx512VBmi2Support        {}\n\
+                        \tAvx512VnniSupport         {}\n\
+                        \tGfniSupport               {}\n\
+                        \tVaesSupport               {}\n\
+                        \tAvx512VPopcntdqSupport    {}\n\
+                        \tVpclmulqdqSupport         {}\n",
+                        xsave_features.unwrap().__bindgen_anon_1.XsaveSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.XsaveoptSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.AvxSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx2Support() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.FmaSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.MpxSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512Support() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512DQSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512CDSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512BWSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512VLSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.XsaveCompSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.XsaveSupervisorSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Xcr1Support() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512BitalgSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512IfmaSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512VBmiSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512VBmi2Support() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512VnniSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.GfniSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.VaesSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.Avx512VPopcntdqSupport() != 0,
+                        xsave_features.unwrap().__bindgen_anon_1.VpclmulqdqSupport() != 0);
+            }
         }
 
         // Create a new WHVP partition
@@ -850,11 +857,11 @@ impl Whvp {
         let mut ret: WhvpContext = unsafe { std::mem::zeroed() };
 
         // Check if xsave is supported
-        let xsave_supported =
-            unsafe { self.xsave_features.__bindgen_anon_1.XsaveSupport() };
+        //let xsave_supported = unsafe { self.xsave_features.__bindgen_anon_1.XsaveSupport() };
+        let xsave_supported = self.xsave_features.is_some();
 
         // If xsave is not supported make sure we do not sync xcr0
-        let names = if xsave_supported == 0 {
+        let names = if !xsave_supported {
             // Don't use xcr0
             assert!(WHVP_CONTEXT_NAMES[WHVP_CONTEXT_NAMES.len() - 1] == 
                 WHV_REGISTER_NAME_WHvX64RegisterXCr0);
@@ -874,14 +881,15 @@ impl Whvp {
     // Commit the entire WHVP context structure state to the hypervisor state
     pub fn set_context(&mut self, context: &WhvpContext) {
         // Check if xsave is supported
-        let xsave_supported =
-            unsafe { self.xsave_features.__bindgen_anon_1.XsaveSupport() };
+        // let xsave_supported = unsafe { self.xsave_features.__bindgen_anon_1.XsaveSupport() };
+
+        //let xsave_supported = unsafe { self.xsave_features.__bindgen_anon_1.XsaveSupport() };
+        let xsave_supported = self.xsave_features.is_some();
 
         // If xsave is not supported make sure we do not sync xcr0
-        let names = if xsave_supported == 0 {
+        let names = if !xsave_supported {
             // Don't use xcr0
-            assert!(WHVP_CONTEXT_NAMES[WHVP_CONTEXT_NAMES.len() - 1] == 
-                WHV_REGISTER_NAME_WHvX64RegisterXCr0);
+            assert!(WHVP_CONTEXT_NAMES[WHVP_CONTEXT_NAMES.len() - 1] == WHV_REGISTER_NAME_WHvX64RegisterXCr0);
             WHVP_CONTEXT_NAMES.len() - 1
         } else {
             WHVP_CONTEXT_NAMES.len()
@@ -897,9 +905,7 @@ impl Whvp {
             print!("Please open a ticket with your CPU string:\n");
             print!("    CPU string: \"{}\"\n", get_cpu_string());
 
-            assert!(res == 0,
-                "WHvSetVirtualProcessorRegisters() error: {:#x}\n{}",
-                res, context);
+            assert!(res == 0, "WHvSetVirtualProcessorRegisters() error: {:#x}\n{}", res, context);
         }
     }
 
